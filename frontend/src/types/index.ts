@@ -43,6 +43,7 @@ export interface ChatMember {
   role: MemberRole;
   isOnline: boolean;
   joinedAt: string;
+  lastSeenAt?: string;
 }
 
 export interface Chat {

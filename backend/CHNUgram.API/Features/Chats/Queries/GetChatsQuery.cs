@@ -68,7 +68,8 @@ public class GetUserChatsQueryHandler : IRequestHandler<GetUserChatsQuery, List<
                     member.User.AvatarUrl,
                     member.Role.ToString().ToLower(),
                     isOnline,
-                    member.JoinedAt));
+                    member.JoinedAt,
+                    member.User.LastSeenAt));
             }
 
             MessageDto? lastMsgDto = null;
@@ -148,7 +149,8 @@ public class GetChatQueryHandler : IRequestHandler<GetChatQuery, ChatDto>
                 member.User.AvatarUrl,
                 member.Role.ToString().ToLower(),
                 isOnline,
-                member.JoinedAt));
+                member.JoinedAt,
+                member.User.LastSeenAt));
         }
 
         return new ChatDto(

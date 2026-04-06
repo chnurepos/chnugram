@@ -13,10 +13,23 @@ export function formatChatTime(dateStr: string): string {
   return format(date, 'dd.MM.yy');
 }
 
-export function formatLastSeen(dateStr?: string): string {
+export function formatLastSeen(dateStr?: string, hidden?: boolean): string {
+  if (hidden) return 'нещодавно';
   if (!dateStr) return 'давно';
   const date = new Date(dateStr);
-  return formatDistanceToNow(date, { addSuffix: true, locale: uk });
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return 'щойно';
+  if (diffMin < 60) return `${diffMin} хв тому`;
+  if (diffHours < 24) return `сьогодні о ${format(date, 'HH:mm')}`;
+  if (diffDays === 1) return `вчора о ${format(date, 'HH:mm')}`;
+  if (diffDays < 7) return `${format(date, 'EEEE', { locale: uk })} о ${format(date, 'HH:mm')}`;
+  if (diffDays < 365) return format(date, 'd MMM о HH:mm', { locale: uk });
+  return 'давно';
 }
 
 export function formatFileSize(bytes: number): string {

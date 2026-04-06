@@ -10,6 +10,7 @@ import Avatar from '../ui/Avatar';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import UserProfileModal from './UserProfileModal';
+import GroupProfileModal from './GroupProfileModal';
 import type { Chat } from '../../types';
 
 interface ChatWindowProps {
@@ -22,6 +23,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const { user } = useAuthStore();
   const previousChatId = useRef<string>('');
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [showGroupProfile, setShowGroupProfile] = useState(false);
 
   const chat = chats.find(c => c.id === chatId);
   const typingInChat = typingUsers[chatId] ?? [];
@@ -77,7 +79,7 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
   const statusText = typingInChat.length > 0
     ? `${typingInChat.map(u => u.username).join(', ')} друкує...`
     : otherMember
-    ? (otherMemberIsOnline ? 'онлайн' : `був(ла) ${formatLastSeen(otherMember?.userId ? undefined : undefined)}`)
+    ? (otherMemberIsOnline ? 'онлайн' : `був(ла) ${formatLastSeen(otherMember.lastSeenAt)}`)
     : `${onlineCount} онлайн`;
 
   const isStatusOnline = typingInChat.length === 0 && (otherMemberIsOnline || onlineCount > 0);
@@ -99,8 +101,11 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         </button>
 
         <button
-          onClick={() => otherMember && setProfileUserId(otherMember.userId)}
-          className={otherMember ? 'cursor-pointer' : 'cursor-default'}
+          onClick={() => {
+            if (otherMember) setProfileUserId(otherMember.userId);
+            else if (chat.type === 'group') setShowGroupProfile(true);
+          }}
+          className="cursor-pointer"
         >
           <Avatar src={avatarUrl} name={chatName} size="md" isOnline={otherMember ? otherMemberIsOnline : undefined} />
         </button>
@@ -129,11 +134,18 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       {/* Message Input */}
       <MessageInput chatId={chatId} />
 
-      {/* User Profile Modal */}
       {profileUserId && (
         <UserProfileModal
           userId={profileUserId}
           onClose={() => setProfileUserId(null)}
+        />
+      )}
+      {showGroupProfile && chat.type === 'group' && (
+        <GroupProfileModal
+          chat={chat}
+          currentUserId={user?.id ?? ''}
+          onClose={() => setShowGroupProfile(false)}
+          onMemberClick={uid => { setShowGroupProfile(false); setProfileUserId(uid); }}
         />
       )}
     </div>

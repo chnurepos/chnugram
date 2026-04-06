@@ -49,7 +49,8 @@ public record ChatMemberDto(
     string? AvatarUrl,
     string Role,
     bool IsOnline,
-    DateTime JoinedAt
+    DateTime JoinedAt,
+    DateTime? LastSeenAt = null
 );
 
 public record CreateChatRequest(string Type, string? Name, string? Description, List<string> MemberIds);
