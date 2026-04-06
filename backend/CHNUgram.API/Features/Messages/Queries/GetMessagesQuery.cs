@@ -37,6 +37,7 @@ public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, PagedRe
             .OrderByDescending(m => m.SentAt)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
+            .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
         var dtos = messages

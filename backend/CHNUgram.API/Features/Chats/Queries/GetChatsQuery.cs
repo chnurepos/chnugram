@@ -45,6 +45,7 @@ public class GetUserChatsQueryHandler : IRequestHandler<GetUserChatsQuery, List<
                 .Include(m => m.Reads)
                 .Where(m => m.ChatId == chat.Id)
                 .OrderByDescending(m => m.SentAt)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(cancellationToken);
 
             // Count unread
