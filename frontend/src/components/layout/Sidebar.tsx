@@ -235,35 +235,38 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
         )}
       </div>
 
-      {/* ── Left drawer ── */}
+      {/* ── Menu bottom sheet ── */}
       {showDrawer && (
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.45)' }}
+            className="fixed inset-0 z-40 fade-in"
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
             onMouseDown={() => setShowDrawer(false)}
           />
-          {/* Drawer panel */}
+          {/* Bottom sheet */}
           <div
-            className="fixed top-0 left-0 h-full z-50 flex flex-col slide-right"
-            style={{ width: 280, background: 'var(--bg-sidebar)', boxShadow: '4px 0 24px rgba(0,0,0,0.4)' }}
+            className="fixed bottom-0 left-0 z-50 sheet-up"
+            style={{ width: 320, background: 'var(--bg-card)', borderRadius: '20px 20px 0 0', boxShadow: '0 -8px 48px rgba(0,0,0,0.5)', overflow: 'hidden' }}
             onMouseDown={e => e.stopPropagation()}
           >
-            {/* Drawer header — user info */}
-            <div className="p-5 pb-4" style={{ background: 'var(--bg-input)' }}>
-              <div className="flex items-center gap-3 mb-3">
-                <Avatar src={getAvatarUrl(user?.avatarUrl)} name={user?.displayName ?? '?'} size="lg" isOnline />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{user?.displayName}</p>
-                  <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>@{user?.username}</p>
-                </div>
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border-real)' }} />
+            </div>
+
+            {/* User info */}
+            <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: '1px solid var(--border-real)' }}>
+              <Avatar src={getAvatarUrl(user?.avatarUrl)} name={user?.displayName ?? '?'} size="lg" isOnline />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{user?.displayName}</p>
+                <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>@{user?.username}</p>
               </div>
             </div>
 
-            {/* Drawer menu items */}
-            <div className="flex-1 py-2">
-              <DrawerItem
+            {/* Menu items */}
+            <div className="py-2">
+              <SheetItem
                 icon={
                   <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -272,7 +275,7 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
                 label="My Profile"
                 onClick={() => { setShowDrawer(false); onProfileClick(); }}
               />
-              <DrawerItem
+              <SheetItem
                 icon={
                   <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -282,11 +285,8 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
                 label="Settings"
                 onClick={() => { setShowDrawer(false); setShowSettings(true); }}
               />
-            </div>
-
-            {/* Logout at bottom */}
-            <div className="p-3">
-              <DrawerItem
+              <div style={{ height: 1, margin: '4px 20px', background: 'var(--border-real)' }} />
+              <SheetItem
                 icon={
                   <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -297,6 +297,8 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
                 danger
               />
             </div>
+            {/* Safe bottom padding */}
+            <div style={{ height: 16 }} />
           </div>
         </>
       )}
@@ -307,7 +309,7 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
   );
 }
 
-function DrawerItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+function SheetItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
     <button
       onClick={onClick}
