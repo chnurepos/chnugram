@@ -79,26 +79,6 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
 
       {/* ── Header ── */}
       <div className="flex items-center gap-2 px-2 py-2 flex-shrink-0">
-        {/* Arrow trigger — subtle line + chevron */}
-        <div
-          ref={triggerRef}
-          className="relative flex-shrink-0"
-          onMouseEnter={() => setMenuOpen(true)}
-          onMouseLeave={handleTriggerMouseLeave}
-        >
-          <div
-            className="flex items-center gap-0.5 px-1 py-2 rounded-lg cursor-default transition-opacity"
-            style={{ opacity: menuOpen ? 0 : 1 }}
-          >
-            {/* Vertical line */}
-            <div style={{ width: 2, height: 20, borderRadius: 1, background: 'var(--text-muted)', opacity: 0.35 }} />
-            {/* Chevron */}
-            <svg style={{ width: 12, height: 12, color: 'var(--text-muted)', opacity: 0.4 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-
         {/* Search bar */}
         <div className="flex-1 relative">
           <svg
@@ -257,16 +237,32 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
                 />
               ))}
             </div>
-            {/* Bottom fade — chats fade out before they hit the trigger */}
+            {/* Bottom fade */}
             <div
               className="pointer-events-none sticky bottom-0 left-0 right-0"
               style={{
-                height: 56,
+                height: 48,
                 background: `linear-gradient(to bottom, transparent, var(--bg-sidebar))`,
               }}
             />
           </>
         )}
+      </div>
+
+      {/* ── Bottom trigger — horizontal line + up arrow ── */}
+      <div
+        ref={triggerRef}
+        className="flex-shrink-0 flex flex-col items-center justify-center cursor-default transition-opacity"
+        style={{ height: 32, opacity: menuOpen ? 0 : 1, pointerEvents: menuOpen ? 'none' : 'auto' }}
+        onMouseEnter={() => setMenuOpen(true)}
+        onMouseLeave={handleTriggerMouseLeave}
+      >
+        {/* Up chevron */}
+        <svg style={{ width: 14, height: 14, color: 'var(--text-muted)', opacity: 0.4, marginBottom: 2 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+        </svg>
+        {/* Horizontal line */}
+        <div style={{ width: '72%', height: 2, borderRadius: 1, background: 'var(--text-muted)', opacity: 0.2 }} />
       </div>
 
       {/* ── Hover menu panel ── */}
