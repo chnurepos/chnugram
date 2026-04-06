@@ -2,14 +2,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../../stores/chatStore';
 import { useAuthStore } from '../../stores/authStore';
-import { authApi } from '../../services/api';
 import { getAvatarUrl, getChatName, getChatAvatar, formatChatTime } from '../../utils/helpers';
 import { getCustomContact } from '../chat/UserProfileModal';
 import Avatar from '../ui/Avatar';
 import NewChatModal from '../chat/NewChatModal';
 import SettingsPanel from './SettingsPanel';
 import type { Chat } from '../../types';
-import { stopConnection } from '../../services/signalr';
 
 interface SidebarProps {
   onProfileClick: () => void;
@@ -17,10 +15,11 @@ interface SidebarProps {
 
 export default function Sidebar({ onProfileClick }: SidebarProps) {
   const { chats, activeChatId, setActiveChat, isLoadingChats, onlineUsers } = useChatStore();
-  const { user, refreshToken, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const [showNewChat, setShowNewChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuClosing, setMenuClosing] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -29,21 +28,18 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
 
-  const scheduleClose = useCallback(() => {
-    closeTimer.current = setTimeout(() => setMenuOpen(false), 120);
+  const closeMenu = useCallback(() => {
+    setMenuClosing(true);
+    setTimeout(() => { setMenuOpen(false); setMenuClosing(false); }, 200);
   }, []);
+
+  const scheduleClose = useCallback(() => {
+    closeTimer.current = setTimeout(() => closeMenu(), 120);
+  }, [closeMenu]);
 
   const cancelClose = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
-
-  const handleLogout = async () => {
-    setMenuOpen(false);
-    try { if (refreshToken) await authApi.logout(refreshToken); } catch {}
-    await stopConnection();
-    logout();
-    navigate('/login');
-  };
 
   const filteredChats = searchValue.trim()
     ? chats.filter(c => getChatName(c, user?.id ?? '').toLowerCase().includes(searchValue.toLowerCase()))
@@ -261,7 +257,7 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
       {menuOpen && (
         <div
           ref={menuRef}
-          className="absolute bottom-0 left-0 right-0 z-20 menu-slide-up"
+          className={`absolute bottom-0 left-0 right-0 z-20 ${menuClosing ? 'menu-slide-down' : 'menu-slide-up'}`}
           style={{
             background: 'var(--bg-card)',
             borderRadius: '16px 16px 0 0',
@@ -305,17 +301,6 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
               }
               label="Settings"
               onClick={() => { setMenuOpen(false); setShowSettings(true); }}
-            />
-            <div style={{ height: 1, margin: '2px 16px', background: 'var(--border-real)' }} />
-            <MenuItem
-              icon={
-                <svg style={{ width: 18, height: 18 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              }
-              label="Log out"
-              onClick={handleLogout}
-              danger
             />
           </div>
           <div style={{ height: 8 }} />

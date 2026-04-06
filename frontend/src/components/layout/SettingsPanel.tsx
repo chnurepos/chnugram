@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../../stores/themeStore';
 import { useAuthStore } from '../../stores/authStore';
+import { authApi } from '../../services/api';
 import { getAvatarUrl } from '../../utils/helpers';
+import { stopConnection } from '../../services/signalr';
 import Avatar from '../ui/Avatar';
 
 interface SettingsPanelProps {
@@ -17,12 +20,15 @@ function saveSetting(key: string, val: boolean) {
 
 export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { theme, setTheme } = useThemeStore();
-  const { user } = useAuthStore();
+  const { user, refreshToken, logout } = useAuthStore();
   const [soundOn, setSoundOn] = useState(() => loadSetting('setting-sound', true));
   const [notifOn, setNotifOn] = useState(() => loadSetting('setting-notif', false));
   const [showOnline, setShowOnline] = useState(() => loadSetting('setting-show-online', true));
   const [showRead, setShowRead] = useState(() => loadSetting('setting-show-read', true));
+  const [closing, setClosing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navigate = useNavigate();
 
   const toggle = (val: boolean, set: (v: boolean) => void, key: string) => {
     const next = !val;
@@ -31,30 +37,50 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
     if (key === 'setting-notif' && next) Notification.requestPermission().catch(() => {});
   };
 
-  // Close when clicking outside the panel (inside the sidebar area = just click on backdrop/chat area)
+  const animateClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(() => onClose(), 280);
+  }, [onClose]);
+
+  const scheduleClose = useCallback(() => {
+    closeTimer.current = setTimeout(() => animateClose(), 120);
+  }, [animateClose]);
+
+  const cancelClose = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
+
+  const handleLogout = async () => {
+    try { if (refreshToken) await authApi.logout(refreshToken); } catch {}
+    await stopConnection();
+    logout();
+    navigate('/login');
+  };
+
+  // Close when clicking outside (in chat area)
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose();
+        animateClose();
       }
     };
-    // Small delay so the opening click doesn't immediately close
     const t = setTimeout(() => document.addEventListener('mousedown', handler), 50);
     return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
-  }, [onClose]);
+  }, [animateClose]);
 
   return (
-    /* Absolute panel that covers the sidebar from bottom to top */
     <div
       ref={panelRef}
-      className="absolute inset-0 z-30 flex flex-col settings-slide-up overflow-y-auto"
+      className={`absolute inset-0 z-30 flex flex-col overflow-y-auto ${closing ? 'settings-slide-down' : 'settings-slide-up'}`}
       style={{ background: 'var(--bg-sidebar)' }}
+      onMouseLeave={scheduleClose}
+      onMouseEnter={cancelClose}
       onMouseDown={e => e.stopPropagation()}
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-real)' }}>
         <button
-          onClick={onClose}
+          onClick={animateClose}
           className="p-1.5 rounded-xl transition-colors"
           style={{ color: 'var(--text-muted)' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
@@ -117,6 +143,22 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           label="Show read receipts"
           right={<Toggle on={showRead} onToggle={() => toggle(showRead, setShowRead, 'setting-show-read')} />}
         />
+      </div>
+
+      {/* Logout */}
+      <div className="px-4 py-3 flex-shrink-0" style={{ borderTop: '1px solid var(--border-real)' }}>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-left"
+          style={{ color: '#e74c3c' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(231,76,60,0.08)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = ''; }}
+        >
+          <svg style={{ width: 18, height: 18, color: '#e74c3c', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span className="text-sm font-medium">Log out</span>
+        </button>
       </div>
 
       {/* Version */}

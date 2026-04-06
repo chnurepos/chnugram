@@ -218,14 +218,26 @@
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.menu-slide-up { animation: menu-slide-up 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.menu-slide-up { animation: menu-slide-up 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+@keyframes menu-slide-down {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(20px); }
+}
+.menu-slide-down { animation: menu-slide-down 0.18s cubic-bezier(0.55, 0, 0.1, 1) forwards; }
 
 /* Settings panel covers the entire sidebar from bottom */
 @keyframes settings-slide-up {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
-.settings-slide-up { animation: settings-slide-up 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.settings-slide-up { animation: settings-slide-up 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+@keyframes settings-slide-down {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+.settings-slide-down { animation: settings-slide-down 0.26s cubic-bezier(0.55, 0, 0.1, 1) forwards; }
 
 @keyframes fade-in {
   from { opacity: 0; }
