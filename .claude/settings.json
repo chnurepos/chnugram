@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --version)",
+      "Bash(npm --version)",
+      "Bash(docker --version)",
+      "Read(//usr/share/**)",
+      "Read(//usr/local/share/**)",
+      "Read(//q//**)",
+      "Read(//c/Program Files/**)",
+      "Read(//c//**)",
+      "Read(//c/Users//**)",
+      "Read(//c/msys64/usr/bin//**)",
+      "Read(//c/Program Files \\(x86\\)//**)",
+      "Bash(powershell -Command ':*)"
+    ]
+  }
+}

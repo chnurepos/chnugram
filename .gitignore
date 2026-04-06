@@ -1,0 +1,53 @@
+# Directories
+node_modules/
+dist/
+build/
+.next/
+out/
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+*.suo
+*.lock.json
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+
+# Uploads
+backend/CHNUgram.API/uploads/
+
+# Docker
+.docker/
+
+# Coverage
+coverage/
+*.coverage
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
