@@ -135,6 +135,14 @@ export const chatsApi = {
   updateChat: (id: string, data: { name?: string; description?: string }) =>
     api.put<ApiResponse<Chat>>(`/chats/${id}`, data),
 
+  updateChatAvatar: (id: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.put<ApiResponse<string>>(`/chats/${id}/avatar`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   deleteChat: (id: string) =>
     api.delete<ApiResponse<boolean>>(`/chats/${id}`),
 

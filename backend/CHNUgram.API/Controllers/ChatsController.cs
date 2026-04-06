@@ -88,6 +88,21 @@ public class ChatsController : ControllerBase
         }
     }
 
+    [HttpPut("{id}/avatar")]
+    public async Task<IActionResult> UpdateChatAvatar(string id, IFormFile file)
+    {
+        try
+        {
+            var url = await _mediator.Send(new UpdateChatAvatarCommand(id, UserId, file));
+            await _hubContext.Clients.Group($"chat:{id}").SendAsync("ChatAvatarUpdated", new { chatId = id, avatarUrl = url });
+            return Ok(ApiResponse<string>.Ok(url));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, ApiResponse<object>.Fail(ex.Message));
+        }
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteChat(string id)
     {

@@ -9,6 +9,7 @@ namespace CHNUgram.API.Features.Chats.Commands;
 
 public record CreateChatCommand(string CreatorId, string Type, string? Name, string? Description, List<string> MemberIds) : IRequest<ChatDto>;
 public record UpdateChatCommand(string ChatId, string UserId, string? Name, string? Description) : IRequest<ChatDto>;
+public record UpdateChatAvatarCommand(string ChatId, string UserId, IFormFile File) : IRequest<string>;
 public record DeleteChatCommand(string ChatId, string UserId) : IRequest<bool>;
 public record AddMemberCommand(string ChatId, string RequesterId, string UserId, string Role) : IRequest<bool>;
 public record RemoveMemberCommand(string ChatId, string RequesterId, string UserId) : IRequest<bool>;
@@ -147,6 +148,43 @@ public class UpdateChatCommandHandler : IRequestHandler<UpdateChatCommand, ChatD
 
         return new ChatDto(chat.Id, chat.Type.ToString().ToLower(), chat.Name, chat.Description,
             chat.AvatarUrl, chat.CreatedBy, chat.CreatedAt, memberDtos, null, 0);
+    }
+}
+
+public class UpdateChatAvatarCommandHandler : IRequestHandler<UpdateChatAvatarCommand, string>
+{
+    private readonly AppDbContext _db;
+    private readonly IFileStorageService _storage;
+
+    public UpdateChatAvatarCommandHandler(AppDbContext db, IFileStorageService storage)
+    {
+        _db = db;
+        _storage = storage;
+    }
+
+    public async Task<string> Handle(UpdateChatAvatarCommand request, CancellationToken cancellationToken)
+    {
+        var member = await _db.ChatMembers
+            .FirstOrDefaultAsync(cm => cm.ChatId == request.ChatId && cm.UserId == request.UserId && cm.LeftAt == null, cancellationToken);
+
+        if (member == null || member.Role == MemberRole.Member)
+            throw new UnauthorizedAccessException("Only admins can update chat avatar.");
+
+        var chat = await _db.Chats.FirstOrDefaultAsync(c => c.Id == request.ChatId, cancellationToken)
+            ?? throw new KeyNotFoundException("Chat not found.");
+
+        var (_, publicUrl) = await _storage.SaveFileAsync(request.File, "avatars");
+
+        if (chat.AvatarUrl != null)
+        {
+            try { await _storage.DeleteFileAsync(chat.AvatarUrl.Replace(_storage.GetPublicUrl(""), "")); } catch { }
+        }
+
+        chat.AvatarUrl = publicUrl;
+        chat.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return publicUrl;
     }
 }
 
