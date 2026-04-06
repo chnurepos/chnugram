@@ -213,6 +213,20 @@
 }
 .sheet-up { animation: sheet-up 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 
+/* Hover menu panel slides up from bottom of sidebar */
+@keyframes menu-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.menu-slide-up { animation: menu-slide-up 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+
+/* Settings panel covers the entire sidebar from bottom */
+@keyframes settings-slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.settings-slide-up { animation: settings-slide-up 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }

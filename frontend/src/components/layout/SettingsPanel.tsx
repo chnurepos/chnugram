@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useThemeStore } from '../../stores/themeStore';
 import { useAuthStore } from '../../stores/authStore';
 import { getAvatarUrl } from '../../utils/helpers';
@@ -22,6 +22,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [notifOn, setNotifOn] = useState(() => loadSetting('setting-notif', false));
   const [showOnline, setShowOnline] = useState(() => loadSetting('setting-show-online', true));
   const [showRead, setShowRead] = useState(() => loadSetting('setting-show-read', true));
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const toggle = (val: boolean, set: (v: boolean) => void, key: string) => {
     const next = !val;
@@ -30,93 +31,99 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
     if (key === 'setting-notif' && next) Notification.requestPermission().catch(() => {});
   };
 
+  // Close when clicking outside the panel (inside the sidebar area = just click on backdrop/chat area)
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    // Small delay so the opening click doesn't immediately close
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 50);
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
+  }, [onClose]);
+
   return (
-    <>
-      {/* Full-screen backdrop */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ background: 'rgba(0,0,0,0.45)' }}
-        onMouseDown={onClose}
-      />
+    /* Absolute panel that covers the sidebar from bottom to top */
+    <div
+      ref={panelRef}
+      className="absolute inset-0 z-30 flex flex-col settings-slide-up overflow-y-auto"
+      style={{ background: 'var(--bg-sidebar)' }}
+      onMouseDown={e => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-real)' }}>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-xl transition-colors"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = ''; }}
+        >
+          <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <h2 className="font-semibold text-sm" style={{ color: 'var(--text-primary)', fontFamily: "'Space Mono', monospace", letterSpacing: '0.05em' }}>
+          SETTINGS
+        </h2>
+      </div>
 
-      {/* Side panel — same width as sidebar, slides in from left */}
-      <div
-        className="fixed top-0 left-0 h-full z-50 flex flex-col slide-right overflow-y-auto"
-        style={{ width: 320, background: 'var(--bg-sidebar)', boxShadow: '4px 0 32px rgba(0,0,0,0.5)' }}
-        onMouseDown={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ background: 'var(--bg-header)' }}>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = ''; }}
-          >
-            <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h2 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Settings</h2>
-        </div>
-
-        {/* Profile card */}
-        <div className="flex items-center gap-4 px-5 py-5 flex-shrink-0" style={{ background: 'var(--bg-header)' }}>
-          <Avatar src={getAvatarUrl(user?.avatarUrl)} name={user?.displayName ?? '?'} size="lg" isOnline />
-          <div className="min-w-0">
-            <p className="font-semibold text-base truncate" style={{ color: 'var(--text-primary)' }}>{user?.displayName}</p>
-            <p className="text-sm truncate" style={{ color: 'var(--text-muted)' }}>@{user?.username}</p>
-          </div>
-        </div>
-
-        <div className="flex-1 py-2">
-          {/* Appearance */}
-          <SectionLabel>Appearance</SectionLabel>
-          <div className="px-4 pb-3 flex gap-3">
-            <ThemeBtn active={theme === 'light'} onClick={() => setTheme('light')}>
-              <SunIcon />
-              <span>Light</span>
-            </ThemeBtn>
-            <ThemeBtn active={theme === 'dark'} onClick={() => setTheme('dark')}>
-              <MoonIcon />
-              <span>Dark</span>
-            </ThemeBtn>
-          </div>
-
-          {/* Notifications */}
-          <SectionLabel>Notifications and Sounds</SectionLabel>
-          <SettingRow
-            icon={<BellIcon />}
-            label="Message sounds"
-            right={<Toggle on={soundOn} onToggle={() => toggle(soundOn, setSoundOn, 'setting-sound')} />}
-          />
-          <SettingRow
-            icon={<NotifIcon />}
-            label="Browser notifications"
-            right={<Toggle on={notifOn} onToggle={() => toggle(notifOn, setNotifOn, 'setting-notif')} />}
-          />
-
-          {/* Privacy */}
-          <SectionLabel>Privacy and Security</SectionLabel>
-          <SettingRow
-            icon={<EyeIcon />}
-            label="Show online status"
-            right={<Toggle on={showOnline} onToggle={() => toggle(showOnline, setShowOnline, 'setting-show-online')} />}
-          />
-          <SettingRow
-            icon={<CheckIcon />}
-            label="Show read receipts"
-            right={<Toggle on={showRead} onToggle={() => toggle(showRead, setShowRead, 'setting-show-read')} />}
-          />
-        </div>
-
-        {/* Version */}
-        <div className="px-5 py-4 flex-shrink-0">
-          <p className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>CHNUgram · v2.0</p>
+      {/* Profile card */}
+      <div className="flex items-center gap-4 px-5 py-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--border-real)' }}>
+        <Avatar src={getAvatarUrl(user?.avatarUrl)} name={user?.displayName ?? '?'} size="lg" isOnline />
+        <div className="min-w-0">
+          <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{user?.displayName}</p>
+          <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>@{user?.username}</p>
         </div>
       </div>
-    </>
+
+      <div className="flex-1 py-2">
+        {/* Appearance */}
+        <SectionLabel>Appearance</SectionLabel>
+        <div className="px-4 pb-3 flex gap-3">
+          <ThemeBtn active={theme === 'light'} onClick={() => setTheme('light')}>
+            <SunIcon />
+            <span>Light</span>
+          </ThemeBtn>
+          <ThemeBtn active={theme === 'dark'} onClick={() => setTheme('dark')}>
+            <MoonIcon />
+            <span>Dark</span>
+          </ThemeBtn>
+        </div>
+
+        {/* Notifications */}
+        <SectionLabel>Notifications and Sounds</SectionLabel>
+        <SettingRow
+          icon={<BellIcon />}
+          label="Message sounds"
+          right={<Toggle on={soundOn} onToggle={() => toggle(soundOn, setSoundOn, 'setting-sound')} />}
+        />
+        <SettingRow
+          icon={<NotifIcon />}
+          label="Browser notifications"
+          right={<Toggle on={notifOn} onToggle={() => toggle(notifOn, setNotifOn, 'setting-notif')} />}
+        />
+
+        {/* Privacy */}
+        <SectionLabel>Privacy and Security</SectionLabel>
+        <SettingRow
+          icon={<EyeIcon />}
+          label="Show online status"
+          right={<Toggle on={showOnline} onToggle={() => toggle(showOnline, setShowOnline, 'setting-show-online')} />}
+        />
+        <SettingRow
+          icon={<CheckIcon />}
+          label="Show read receipts"
+          right={<Toggle on={showRead} onToggle={() => toggle(showRead, setShowRead, 'setting-show-read')} />}
+        />
+      </div>
+
+      {/* Version */}
+      <div className="px-5 py-3 flex-shrink-0">
+        <p className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>CHNUgram · v2.0</p>
+      </div>
+    </div>
   );
 }
 

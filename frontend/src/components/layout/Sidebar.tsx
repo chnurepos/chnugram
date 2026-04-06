@@ -20,14 +20,16 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
   const { user, refreshToken, logout } = useAuthStore();
   const [showNewChat, setShowNewChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showDrawer, setShowDrawer] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    setShowDrawer(false);
+    setMenuOpen(false);
     try { if (refreshToken) await authApi.logout(refreshToken); } catch {}
     await stopConnection();
     logout();
@@ -53,23 +55,49 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
+  // Close menu when mouse leaves both trigger and menu
+  const handleMenuMouseLeave = (e: React.MouseEvent) => {
+    const related = e.relatedTarget as Node | null;
+    if (
+      related &&
+      (menuRef.current?.contains(related) || triggerRef.current?.contains(related))
+    ) return;
+    setMenuOpen(false);
+  };
+
+  const handleTriggerMouseLeave = (e: React.MouseEvent) => {
+    const related = e.relatedTarget as Node | null;
+    if (
+      related &&
+      (menuRef.current?.contains(related) || triggerRef.current?.contains(related))
+    ) return;
+    setMenuOpen(false);
+  };
+
   return (
     <div className="flex flex-col h-full relative" style={{ background: 'var(--bg-sidebar)' }}>
 
       {/* ── Header ── */}
       <div className="flex items-center gap-2 px-2 py-2 flex-shrink-0">
-        {/* Hamburger */}
-        <button
-          onClick={() => setShowDrawer(true)}
-          className="p-2 rounded-xl flex-shrink-0 transition-colors"
-          style={{ color: 'var(--text-muted)' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-muted)'; }}
+        {/* Arrow trigger — subtle line + chevron */}
+        <div
+          ref={triggerRef}
+          className="relative flex-shrink-0"
+          onMouseEnter={() => setMenuOpen(true)}
+          onMouseLeave={handleTriggerMouseLeave}
         >
-          <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+          <div
+            className="flex items-center gap-0.5 px-1 py-2 rounded-lg cursor-default transition-opacity"
+            style={{ opacity: menuOpen ? 0 : 1 }}
+          >
+            {/* Vertical line */}
+            <div style={{ width: 2, height: 20, borderRadius: 1, background: 'var(--text-muted)', opacity: 0.35 }} />
+            {/* Chevron */}
+            <svg style={{ width: 12, height: 12, color: 'var(--text-muted)', opacity: 0.4 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
 
         {/* Search bar */}
         <div className="flex-1 relative">
@@ -122,7 +150,6 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
       {/* ── Search overlay ── */}
       {showOverlay && (
         <div className="absolute inset-0 z-30 flex flex-col" style={{ background: 'var(--bg-sidebar)' }}>
-          {/* Overlay header */}
           <div className="flex items-center gap-2 px-2 py-2 flex-shrink-0">
             <button
               onClick={() => { setSearchFocused(false); setSearchValue(''); searchRef.current?.blur(); }}
@@ -161,11 +188,8 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
               )}
             </div>
           </div>
-
-          {/* Overlay results */}
           <div className="flex-1 overflow-y-auto">
             {!searchValue.trim() ? (
-              /* Recent chats */
               <div>
                 <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Recent</p>
                 <div className="px-2">
@@ -206,8 +230,8 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
         </div>
       )}
 
-      {/* ── Chat list ── */}
-      <div className="flex-1 overflow-y-auto">
+      {/* ── Chat list with bottom fade ── */}
+      <div className="flex-1 overflow-y-auto relative">
         {isLoadingChats ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin w-5 h-5 border-2 rounded-full" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
@@ -220,87 +244,94 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No chats yet</p>
           </div>
         ) : (
-          <div className="py-1 px-2">
-            {chats.map(chat => (
-              <ChatItem
-                key={chat.id}
-                chat={chat}
-                currentUserId={user?.id ?? ''}
-                isActive={chat.id === activeChatId}
-                onClick={() => setActiveChat(chat.id)}
-                onlineUsers={onlineUsers}
-              />
-            ))}
-          </div>
+          <>
+            <div className="py-1 px-2">
+              {chats.map(chat => (
+                <ChatItem
+                  key={chat.id}
+                  chat={chat}
+                  currentUserId={user?.id ?? ''}
+                  isActive={chat.id === activeChatId}
+                  onClick={() => setActiveChat(chat.id)}
+                  onlineUsers={onlineUsers}
+                />
+              ))}
+            </div>
+            {/* Bottom fade — chats fade out before they hit the trigger */}
+            <div
+              className="pointer-events-none sticky bottom-0 left-0 right-0"
+              style={{
+                height: 56,
+                background: `linear-gradient(to bottom, transparent, var(--bg-sidebar))`,
+              }}
+            />
+          </>
         )}
       </div>
 
-      {/* ── Menu bottom sheet ── */}
-      {showDrawer && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40 fade-in"
-            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
-            onMouseDown={() => setShowDrawer(false)}
-          />
-          {/* Bottom sheet */}
-          <div
-            className="fixed bottom-0 left-0 z-50 sheet-up"
-            style={{ width: 320, background: 'var(--bg-card)', borderRadius: '20px 20px 0 0', boxShadow: '0 -8px 48px rgba(0,0,0,0.5)', overflow: 'hidden' }}
-            onMouseDown={e => e.stopPropagation()}
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border-real)' }} />
-            </div>
-
-            {/* User info */}
-            <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: '1px solid var(--border-real)' }}>
-              <Avatar src={getAvatarUrl(user?.avatarUrl)} name={user?.displayName ?? '?'} size="lg" isOnline />
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{user?.displayName}</p>
-                <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>@{user?.username}</p>
-              </div>
-            </div>
-
-            {/* Menu items */}
-            <div className="py-2">
-              <SheetItem
-                icon={
-                  <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                }
-                label="My Profile"
-                onClick={() => { setShowDrawer(false); onProfileClick(); }}
-              />
-              <SheetItem
-                icon={
-                  <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                }
-                label="Settings"
-                onClick={() => { setShowDrawer(false); setShowSettings(true); }}
-              />
-              <div style={{ height: 1, margin: '4px 20px', background: 'var(--border-real)' }} />
-              <SheetItem
-                icon={
-                  <svg style={{ width: 20, height: 20 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                }
-                label="Log out"
-                onClick={handleLogout}
-                danger
-              />
-            </div>
-            {/* Safe bottom padding */}
-            <div style={{ height: 16 }} />
+      {/* ── Hover menu panel ── */}
+      {menuOpen && (
+        <div
+          ref={menuRef}
+          className="absolute bottom-0 left-0 right-0 z-20 menu-slide-up"
+          style={{
+            background: 'var(--bg-card)',
+            borderRadius: '16px 16px 0 0',
+            boxShadow: '0 -4px 32px rgba(0,0,0,0.35)',
+            borderTop: '1px solid var(--border-real)',
+          }}
+          onMouseLeave={handleMenuMouseLeave}
+          onMouseEnter={() => setMenuOpen(true)}
+        >
+          {/* Drag handle */}
+          <div className="flex justify-center pt-2.5 pb-1">
+            <div style={{ width: 32, height: 3, borderRadius: 2, background: 'var(--border-real)' }} />
           </div>
-        </>
+
+          {/* User info */}
+          <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--border-real)' }}>
+            <Avatar src={getAvatarUrl(user?.avatarUrl)} name={user?.displayName ?? '?'} size="md" isOnline />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{user?.displayName}</p>
+              <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>@{user?.username}</p>
+            </div>
+          </div>
+
+          {/* Menu items */}
+          <div className="py-1">
+            <MenuItem
+              icon={
+                <svg style={{ width: 18, height: 18 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              }
+              label="My Profile"
+              onClick={() => { setMenuOpen(false); onProfileClick(); }}
+            />
+            <MenuItem
+              icon={
+                <svg style={{ width: 18, height: 18 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              }
+              label="Settings"
+              onClick={() => { setMenuOpen(false); setShowSettings(true); }}
+            />
+            <div style={{ height: 1, margin: '2px 16px', background: 'var(--border-real)' }} />
+            <MenuItem
+              icon={
+                <svg style={{ width: 18, height: 18 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              }
+              label="Log out"
+              onClick={handleLogout}
+              danger
+            />
+          </div>
+          <div style={{ height: 8 }} />
+        </div>
       )}
 
       {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
@@ -309,11 +340,11 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
   );
 }
 
-function SheetItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+function MenuItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 px-5 py-3 text-left transition-colors"
+      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
       style={{ color: danger ? '#e74c3c' : 'var(--text-primary)' }}
       onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
       onMouseLeave={e => { e.currentTarget.style.background = ''; }}
