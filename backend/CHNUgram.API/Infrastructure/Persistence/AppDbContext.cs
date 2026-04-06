@@ -68,7 +68,8 @@ public class AppDbContext : DbContext
             e.Property(cm => cm.UserId).HasColumnName("user_id").HasColumnType("varchar(36)").IsRequired();
             e.Property(cm => cm.Role).HasColumnName("role")
                 .HasConversion(v => v.ToString().ToLower(), v => Enum.Parse<MemberRole>(v, true))
-                .HasDefaultValue(MemberRole.Member);
+                .HasDefaultValue(MemberRole.Member)
+                .HasSentinel(MemberRole.Member);
             e.Property(cm => cm.JoinedAt).HasColumnName("joined_at").IsRequired();
             e.Property(cm => cm.LeftAt).HasColumnName("left_at");
             e.Property(cm => cm.MutedUntil).HasColumnName("muted_until");

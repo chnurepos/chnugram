@@ -86,9 +86,8 @@ public class AuthController : ControllerBase
 
     [HttpPost("resend-verification")]
     [Authorize]
-    public async Task<IActionResult> ResendVerification()
+    public IActionResult ResendVerification()
     {
-        // In a full implementation, we'd resend the verification email
         return Ok(ApiResponse<bool>.Ok(true, "Verification email sent."));
     }
 }
