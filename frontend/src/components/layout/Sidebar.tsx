@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../../stores/chatStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -26,7 +26,16 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+
+  const scheduleClose = useCallback(() => {
+    closeTimer.current = setTimeout(() => setMenuOpen(false), 120);
+  }, []);
+
+  const cancelClose = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
 
   const handleLogout = async () => {
     setMenuOpen(false);
@@ -55,24 +64,6 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
-  // Close menu when mouse leaves both trigger and menu
-  const handleMenuMouseLeave = (e: React.MouseEvent) => {
-    const related = e.relatedTarget as Node | null;
-    if (
-      related &&
-      (menuRef.current?.contains(related) || triggerRef.current?.contains(related))
-    ) return;
-    setMenuOpen(false);
-  };
-
-  const handleTriggerMouseLeave = (e: React.MouseEvent) => {
-    const related = e.relatedTarget as Node | null;
-    if (
-      related &&
-      (menuRef.current?.contains(related) || triggerRef.current?.contains(related))
-    ) return;
-    setMenuOpen(false);
-  };
 
   return (
     <div className="flex flex-col h-full relative" style={{ background: 'var(--bg-sidebar)' }}>
@@ -249,20 +240,21 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
         )}
       </div>
 
-      {/* ── Bottom trigger — horizontal line + up arrow ── */}
+      {/* ── Bottom trigger — always present, menu overlaps it ── */}
       <div
         ref={triggerRef}
-        className="flex-shrink-0 flex flex-col items-center justify-center cursor-default transition-opacity"
-        style={{ height: 32, opacity: menuOpen ? 0 : 1, pointerEvents: menuOpen ? 'none' : 'auto' }}
-        onMouseEnter={() => setMenuOpen(true)}
-        onMouseLeave={handleTriggerMouseLeave}
+        className="flex-shrink-0 flex flex-col items-center justify-center cursor-default"
+        style={{ height: 40, paddingBottom: 6 }}
+        onMouseEnter={() => { cancelClose(); setMenuOpen(true); }}
+        onMouseLeave={scheduleClose}
       >
-        {/* Up chevron */}
-        <svg style={{ width: 14, height: 14, color: 'var(--text-muted)', opacity: 0.4, marginBottom: 2 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg
+          style={{ width: 14, height: 14, color: 'var(--text-muted)', opacity: menuOpen ? 0 : 0.4, marginBottom: 3, transition: 'opacity 0.15s' }}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
         </svg>
-        {/* Horizontal line */}
-        <div style={{ width: '72%', height: 2, borderRadius: 1, background: 'var(--text-muted)', opacity: 0.2 }} />
+        <div style={{ width: '72%', height: 2, borderRadius: 1, background: 'var(--text-muted)', opacity: menuOpen ? 0 : 0.2, transition: 'opacity 0.15s' }} />
       </div>
 
       {/* ── Hover menu panel ── */}
@@ -276,8 +268,8 @@ export default function Sidebar({ onProfileClick }: SidebarProps) {
             boxShadow: '0 -4px 32px rgba(0,0,0,0.35)',
             borderTop: '1px solid var(--border-real)',
           }}
-          onMouseLeave={handleMenuMouseLeave}
-          onMouseEnter={() => setMenuOpen(true)}
+          onMouseLeave={scheduleClose}
+          onMouseEnter={() => { cancelClose(); setMenuOpen(true); }}
         >
           {/* Drag handle */}
           <div className="flex justify-center pt-2.5 pb-1">
