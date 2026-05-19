@@ -1,6 +1,6 @@
 # CHNUgram
 
-A real-time messenger for Chernivtsi National University. Registration is restricted to @chnu.edu.ua email addresses.
+A real-time messenger for Chernivtsi National University. Registration is restricted to @chnu.edu.ua email addresses
 
 ## Stack
 
