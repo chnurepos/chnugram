@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Theme variables ─────────────────────────────────────── */
+/* ─── Theme variables ─────────────────────────────────── */
 :root {
   --accent:          #00b894;
   --accent-hover:    #00a381;
