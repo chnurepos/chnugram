@@ -2,7 +2,7 @@
 
 A real-time messenger for Chernivtsi National University. Registration is restricted to @chnu.edu.ua email addresses
 
-## Stack
+## Stack 
 
 **Backend** — ASP.NET Core 8, MediatR (CQRS), Entity Framework Core, PostgreSQL, Redis, SignalR
 
